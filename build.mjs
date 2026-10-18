@@ -1,0 +1,35 @@
+import {writeFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {dirname,join} from 'node:path';
+import * as kit from './anatomy-task29-demo/kit/iso-kit.mjs';
+import {makeModel as trapezoidModel} from './anatomy-task29-demo/model.mjs';
+import {projectionFor as trapezoidProjection,HOME as trapezoidHome} from './anatomy-task29-demo/camera.mjs';
+import {makeModel as triangleModel} from './anatomy-triangle-plane-demo/model.mjs';
+import {projectionFor as triangleProjection,HOME as triangleHome} from './anatomy-triangle-plane-demo/camera.mjs';
+const here=dirname(fileURLToPath(import.meta.url));
+for(const name of ['anatomy-task29-demo','anatomy-triangle-plane-demo'])execFileSync(process.execPath,[join(here,name,'build.mjs')],{stdio:'inherit'});
+const n=v=>Math.round(v*100)/100;
+function preview(type){
+ const trap=type==='trapezoid',m=trap?trapezoidModel():triangleModel(),P=trap?trapezoidProjection(trapezoidHome):triangleProjection(triangleHome);
+ const points=Object.fromEntries((trap?['A','B','C','D','M','K','H']:['P','M','K','M1','K1']).map(name=>[name,kit.iso(m[name],P)]));
+ const path=(ps,close=false)=>'M'+ps.map(p=>p.map(n).join(' ')).join('L')+(close?'Z':'');
+ const line=(names,cls,close=false)=>`<path class="${cls}" d="${path(names.map(name=>points[name]),close)}"/>`;
+ const plane=`<path class="plane" d="${path(m.patch.map(p=>kit.iso(p,P)),true)}"/>`;
+ const drawing=trap?line(['M','B','C'],'triangle',true)+plane+line(['A','B','C','D'],'edge',true)+line(['B','M','C'],'edge')+line(['K','H'],'accent'):line(['P','M','K'],'triangle',true)+plane+line(['M','P','K','M'],'edge')+line(['M1','K1'],'accent');
+ const labels=Object.entries(points).map(([name,p])=>{const above=name===(trap?'M':'P'),sub=name.endsWith('1'),left=trap?['C','D','H'].includes(name):['M','M1'].includes(name),label=name.replace('1','₁'),dx=above?0:left?-12:12,dy=above?-13:sub?-3:18,accent=trap?['K','H'].includes(name):sub;return `<g${accent?' class="key-point"':''}><circle cx="${n(p[0])}" cy="${n(p[1])}" r="3.5"/><text x="${n(p[0]+dx)}" y="${n(p[1]+dy)}" text-anchor="${above?'middle':left?'end':'start'}">${label}</text></g>`;}).join('');
+ return `<svg viewBox="50 35 700 500" role="img" aria-label="${trap?'Трапеция ABCD, точка M и пересекающая их плоскость':'Треугольник PMK и параллельное основанию сечение'}">${drawing}${labels}</svg>`;
+}
+writeFileSync(join(here,'index.html'),`<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Интерактивные решения задач по стереометрии для 10 класса. Вращайте чертежи, меняйте фигуры и разбирайте доказательства по шагам."><title>Геометрия в пространстве — интерактивные задачи</title><style>
+:root{color-scheme:light;--paper:#f2f2ec;--panel:#fcfcf8;--ink:#303f43;--muted:#6c7b7c;--border:#d3dcd6;--soft:#e7ede7;--accent:#a15c34;--plane:#648ba1;--plane-fill:#8fb4c6}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 Arial,Helvetica,sans-serif}main{width:min(1040px,calc(100% - 40px));margin:48px auto 30px}.eyebrow{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:0 0 12px}h1{font-size:clamp(28px,4vw,42px);font-weight:500;letter-spacing:-1.2px;line-height:1.15;margin:0}.intro{max-width:690px;color:var(--muted);margin:16px 0 28px;font-size:15px}.lessons{display:grid;grid-template-columns:1fr 1fr;gap:20px}.lesson{display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border);border-radius:9px;background:var(--panel);color:inherit;text-decoration:none;transition:border-color .15s}.lesson:hover{border-color:var(--plane)}.lesson:focus-visible{outline:2px solid var(--plane);outline-offset:4px}.preview{height:245px;border-bottom:1px solid var(--border);padding:6px 18px;display:grid;place-items:center;background:var(--panel)}.preview svg{height:100%;width:100%;display:block}.preview path{stroke-linejoin:round;stroke-linecap:round}.preview .triangle{fill:var(--accent);fill-opacity:.045}.preview .plane{fill:var(--plane-fill);fill-opacity:.2;stroke:var(--plane);stroke-width:1}.preview .edge{fill:none;stroke:var(--ink);stroke-width:1.6}.preview .accent{fill:none;stroke:var(--accent);stroke-width:2.8}.preview circle{fill:var(--panel);stroke:var(--ink);stroke-width:1.5}.preview text{font:17px Georgia,serif;fill:var(--ink);paint-order:stroke;stroke:var(--panel);stroke-width:3px}.preview .key-point circle{stroke:var(--accent)}.preview .key-point text{fill:var(--accent)}.content{padding:20px 22px;display:flex;flex-direction:column;flex:1}.tag{font-size:10px;letter-spacing:.7px;color:var(--muted);text-transform:uppercase}h2{font-size:23px;line-height:1.25;font-weight:500;letter-spacing:-.5px;margin:8px 0 10px}.description{font-size:13px;color:var(--muted);margin:0 0 18px}.action{margin-top:auto;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--accent)}.action span:last-child{font-size:20px}footer{font-size:11px;color:var(--muted);margin-top:24px;padding-top:16px;border-top:1px solid var(--border)}
+@media(prefers-color-scheme:dark){:root{color-scheme:dark;--paper:#1a2529;--panel:#222f33;--ink:#e2eae4;--muted:#a1b3b3;--border:#40545a;--soft:#2f4144;--accent:#edb284;--plane:#a6c8d8;--plane-fill:#79a8bb}}
+@media(max-width:660px){main{width:calc(100% - 28px);margin:24px auto}.lessons{grid-template-columns:1fr;gap:16px}.intro{font-size:13px;margin-bottom:20px}.preview{height:210px}.content{padding:17px 18px}h2{font-size:21px}footer{font-size:10px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body><main><header><p class="eyebrow">10 класс · стереометрия</p><h1>Геометрия в пространстве</h1><p class="intro">Вращайте чертежи, меняйте положение точек и проходите решение по шагам. Два разбора задач о прямых, плоскостях и подобии.</p></header>
+<div class="lessons">
+<a class="lesson" href="./anatomy-task29-demo/"><div class="preview">${preview('trapezoid')}</div><div class="content"><span class="tag">Задача 29 · средняя линия</span><h2>Трапеция и плоскость</h2><p class="description">Докажите пересечение плоскости ADK с отрезком MC и найдите KH, если BC = 12 см.</p><div class="action"><span>Разобрать задачу</span><span aria-hidden="true">↗</span></div></div></a>
+<a class="lesson" href="./anatomy-triangle-plane-demo/"><div class="preview">${preview('triangle')}</div><div class="content"><span class="tag">Параллельность · подобие</span><h2>Треугольник и параллельная плоскость</h2><p class="description">Найдите M₁K₁, если MK = 18 см, а отношение MP : M₁P равно 12 : 5.</p><div class="action"><span>Разобрать задачу</span><span aria-hidden="true">↗</span></div></div></a>
+</div><footer>Внутри: вращение мышью или пальцем, масштабирование, плоский вид и полное доказательство для тетради.</footer></main></body></html>`);
+console.log('Built geometry collection with two standalone lessons.');
