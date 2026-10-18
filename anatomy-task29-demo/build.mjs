@@ -53,5 +53,5 @@ function inline(file,name,bindings=''){
 }
 const script=inline('kit/iso-kit.mjs','IsoKit')+inline('model.mjs','TaskModel')+inline('camera.mjs','OrbitCamera','const k=IsoKit;')+readFileSync(join(here,'live.mjs'),'utf8');
 const css=readFileSync(join(here,'style.css'),'utf8');
-for(const theme of ['light','dark'])writeFileSync(join(here,theme==='light'?'index.html':'dark.html'),k.pageHtml({title:'Задача 29 — трапеция, плоскость и средняя линия',theme,body,script,width:1480}).replace('<html lang="en">','<html lang="ru">').replace('</style>',css+'\n</style>'));
+for(const theme of ['light','dark'])writeFileSync(join(here,theme==='light'?'index.html':'dark.html'),k.pageHtml({title:'Задача 29 — трапеция, плоскость и средняя линия',theme,body,script,width:1480}).replace('<html lang="en">','<html lang="ru">').replace('</style>',css+'\n</style>').replace('</head>','<link rel="icon" type="image/svg+xml" href="../favicon.svg"></head>'));
 console.log('Built task29: compact standalone light and dark pages, no stand');
